@@ -1,22 +1,28 @@
 FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    protobuf-compiler \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt update && \
-	apt install curl && \
-	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh 
+# Install Rust (properly)
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
-RUN source $HOME/.cargo/env
+# Clone and build
+WORKDIR /app
+RUN git clone https://github.com/kira1752/nexus-cli.git .
 
-RUN apt update && \
-	apt install -y build-essential pkg-config libssl-dev protobuf-compiler && \
-	apt install git
+WORKDIR /app/clients/cli
+RUN cargo build --release
 
-RUN git clone https://github.com/kira1752/nexus-cli.git 
+# Install binary
+RUN cp target/release/nexus-network /usr/local/bin/
 
-RUN cd ~/nexus-cli/clients/cli && \
-	cargo build --release && \
-	cp target/release/nexus-network /usr/local/bin/nexus-network && \
-	chmod +x /usr/local/bin/nexus-network
-
-RUN nexus-network start --node-id 25693881 --max-threads 4
-
-CMD ["--wait"]
+# Run at container start (NOT build time)
+CMD ["nexus-network", "start", "--node-id", "25693881", "--max-threads", "4"]
