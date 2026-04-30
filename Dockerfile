@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     protobuf-compiler \
     git \
+    openssh-server \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust (properly)
@@ -24,5 +25,6 @@ RUN cargo build --release
 # Install binary
 RUN cp target/release/nexus-network /usr/local/bin/
 
+EXPOSE 9090
 # Run at container start (NOT build time)
-CMD ["nexus-network", "start", "--node-id", "25693881", "--max-threads", "4"]
+CMD ["systemctl start ssh"]
